@@ -55,7 +55,7 @@
 
         if (code) {
             // Construct the YouTube iframe URL with autoplay enabled
-            const iframeUrl = `https://www.youtube.com/embed/${code}?autoplay=1`;
+            const iframeUrl = `https://www.youtube.com/embed/${code}?autoplay=1&mute=1`;
 
             // Set the iframe's src attribute
             document.getElementById('youtube-iframe').src = iframeUrl;
