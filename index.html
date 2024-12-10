@@ -1,1 +1,69 @@
-<iframe src="https://www.youtube.com/embed/RManbLSTXuc?vq=hd1080&autoplay=1" width="1920" height="1080" title="Boston, MA Live Cam - Charles River" frameborder="0" allowfullscreen></iframe>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe with PNG Overlay</title>
+    <style>
+        /* Set up a container for the iframe and image */
+        .iframe-container {
+            position: relative;
+            width: 100%; /* or a fixed width */
+            height: 500px; /* adjust height as needed */
+        }
+
+        /* Make the iframe fill the container */
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Style the image overlay */
+        .overlay-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Makes the image not interactable, so you can click through */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="iframe-container">
+        <!-- Empty iframe that will be populated by JavaScript -->
+        <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
+
+        <!-- Your PNG overlay -->
+        <img class="overlay-image" src="window.png" alt="Overlay Image">
+    </div>
+
+    <script>
+        // Function to get the URL parameter value by name
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Get the 'code' URL parameter (for example: ?code=dQw4w9WgXcQ)
+        const code = getUrlParameter('code');
+
+        if (code) {
+            // Construct the YouTube iframe URL with autoplay enabled
+            const iframeUrl = `https://www.youtube.com/embed/${code}?autoplay=1`;
+
+            // Set the iframe's src attribute
+            document.getElementById('youtube-iframe').src = iframeUrl;
+        } else {
+            // If no 'code' parameter is found, display an error or a default video
+            console.log("No video code provided.");
+        }
+    </script>
+
+</body>
+</html>
