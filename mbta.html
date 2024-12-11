@@ -102,10 +102,12 @@
         async function fetchTrainArrival() {
             const response = await fetch('https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time');
             const data = await response.json();
-            const nextTrain = data.data[0];
-            const arrivalTime = new Date(nextTrain.attributes.departure_time);
 
-            updateCountdown(arrivalTime);
+            // Find the earliest arrival time
+            const arrivalTimes = data.data.map(train => new Date(train.attributes.departure_time));
+            const earliestArrivalTime = Math.min(...arrivalTimes);
+
+            updateCountdown(new Date(earliestArrivalTime));
         }
 
         function updateCountdown(arrivalTime) {
