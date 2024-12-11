@@ -86,9 +86,25 @@
             const response = await fetch('https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time');
             const data = await response.json();
             const nextTrain = data.data[0];
-            const arrivalTime = new Date(nextTrain.attributes.departure_time).toLocaleTimeString();
+            const arrivalTime = new Date(nextTrain.attributes.departure_time);
 
-            document.getElementById('train-arrival').innerText = `Next train arrival: ${arrivalTime}`;
+            updateCountdown(arrivalTime);
+        }
+
+        function updateCountdown(arrivalTime) {
+            const now = new Date();
+            const timeDifference = arrivalTime - now;
+            const minutes = Math.floor(timeDifference / 60000);
+            const seconds = Math.floor((timeDifference % 60000) / 1000);
+
+            document.getElementById('train-arrival').innerText = `Next train arrival: ${minutes}m ${seconds}s`;
+
+            if (timeDifference > 0) {
+                setTimeout(() => updateCountdown(arrivalTime), 1000);
+            } else {
+                document.getElementById('train-arrival').innerText = 'Train is arriving now!';
+                fetchTrainArrival(); // Fetch the next train arrival time
+            }
         }
 
         // Fetch train arrival time on page load
