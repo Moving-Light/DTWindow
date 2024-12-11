@@ -46,6 +46,23 @@
             padding: 10px;
             border-radius: 5px;
         }
+
+        .blink {
+            animation: blink-animation 1s steps(5, start) infinite;
+            -webkit-animation: blink-animation 1s steps(5, start) infinite;
+        }
+
+        @keyframes blink-animation {
+            to {
+                visibility: hidden;
+            }
+        }
+
+        @-webkit-keyframes blink-animation {
+            to {
+                visibility: hidden;
+            }
+        }
     </style>
 </head>
 <body style="background-color: black">
@@ -97,13 +114,16 @@
             const minutes = Math.floor(timeDifference / 60000);
             const seconds = Math.floor((timeDifference % 60000) / 1000);
 
-            document.getElementById('train-arrival').innerText = `Next train arrival: ${minutes}m ${seconds}s`;
+            const trainArrivalElement = document.getElementById('train-arrival');
 
             if (timeDifference > 0) {
+                trainArrivalElement.innerText = `Next train arrival: ${minutes}m ${seconds}s`;
+                trainArrivalElement.classList.remove('blink');
                 setTimeout(() => updateCountdown(arrivalTime), 1000);
             } else {
-                document.getElementById('train-arrival').innerText = 'Train is arriving now!';
-                fetchTrainArrival(); // Fetch the next train arrival time
+                trainArrivalElement.innerText = 'TRAIN!!!!!';
+                trainArrivalElement.classList.add('blink');
+                setTimeout(fetchTrainArrival, 10000); // Fetch the next train arrival time after 10 seconds
             }
         }
 
