@@ -4,49 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DT Window</title>
-    <style>
-        /* Set up a container for the iframe and image */
-        .iframe-container {
-            position: relative;
-            width: 100%; /* or a fixed width */
-            height: 500px; /* adjust height as needed */
-        }
-
-        /* Make the iframe fill the container */
-        iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 1920px;
-            height: 1080px;
-            border: none;
-        }
-
-        /* Style the image overlay */
-        .overlay-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 1920px;
-            height: 1080px;
-            pointer-events: none; /* Makes the image not interactable, so you can click through */
-        }
-
-        body{
-            overflow: hidden;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body style="background-color: black">
+    <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
 
-    <div class="iframe-container">
-        <!-- Empty iframe that will be populated by JavaScript -->
-        <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
+    <!-- Your PNG overlay -->
+    <img class="overlay-image" src="media/window.png" alt="Overlay Image">
+    <img class="holiday-lights" src="media/lights.gif" alt="Lights">
 
-        <!-- Your PNG overlay -->
-        <img class="overlay-image" src="window.png" alt="Overlay Image">
-        <img class="overlay-image" src="lights.gif" alt="Lights">
-    </div>
 
     <script>
         // Function to get the URL parameter value by name
