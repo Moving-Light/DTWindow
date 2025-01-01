@@ -12,6 +12,7 @@
     <!-- Your PNG overlay -->
     <img class="overlay-image" src="media/window.png" alt="Overlay Image">
     <img class="holiday-lights" src="media/lights.gif" alt="Lights">
+    <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em;"></div>
 
 
     <script>
@@ -24,6 +25,7 @@
         // Get the 'code' URL parameter (for example: ?code=dQw4w9WgXcQ)
         const videoId = getUrlParameter('video');
         const holidayMode = getUrlParameter('holiday');
+        const trainMode = getUrlParameter('train');
 
 
         if (videoId) {
@@ -39,6 +41,35 @@
 
         if(holidayMode === 'true') {
             document.querySelector('.holiday-lights').style.display = 'block';
+        }
+
+        if (trainMode === 'true'){
+            fetchTrainArrival();
+        } else {
+            document.getElementById('train-countdown').style.display = 'none';
+        }
+
+        async function fetchTrainArrival() {
+            const response = await fetch('https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=bc3e9340ac314ddc90d89af5382fc28b');
+            const data = await response.json();
+            const arrivalTimes = data.data.map(prediction => new Date(prediction.attributes.departure_time));
+            const earliestArrivalTime = Math.min(...arrivalTimes);
+            updateCountdown(new Date(earliestArrivalTime));
+        }
+
+        function updateCountdown(time) {
+            const now = new Date();
+            const diff = time - now;
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            const display = document.getElementById('train-countdown');
+
+            if (diff > 0) {
+                display.innerText = `Next train: ${minutes}m ${seconds}s`;
+                setTimeout(() => updateCountdown(time), 1000);
+            } else {
+                display.innerText = 'TRAIN!!!!!';
+            }
         }
     </script>
 
