@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DT Window</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body style="background-color: black">
     <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
 
     <!-- Your PNG overlay -->
     <img class="overlay-image" src="media/window.png" alt="Overlay Image">
     <img class="holiday-lights" src="media/lights.gif" alt="Lights">
-    <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em;"></div>
+    <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em; z-index: 9999;"></div>
 
 
     <script>
@@ -27,6 +29,9 @@
         const holidayMode = getUrlParameter('holiday');
         const trainMode = getUrlParameter('train');
 
+        console.log('videoId:', videoId);
+        console.log('holidayMode:', holidayMode);
+        console.log('trainMode:', trainMode);
 
         if (videoId) {
             // Construct the YouTube iframe URL with autoplay enabled
@@ -39,22 +44,55 @@
             console.log("No video code provided.");
         }
 
-        if(holidayMode === 'true') {
+        if (holidayMode === 'true') {
             document.querySelector('.holiday-lights').style.display = 'block';
         }
+        const apiKey = 'bc3e9340ac314ddc90d89af5382fc28b';
 
-        if (trainMode === 'true'){
-            fetchTrainArrival();
+        if (trainMode === 'true') {
+            console.log("Train mode is enabled");
+            document.getElementById('train-countdown').style.display = 'block';
+            initTrainStream(apiKey);
         } else {
             document.getElementById('train-countdown').style.display = 'none';
         }
 
-        async function fetchTrainArrival() {
-            const response = await fetch('https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=bc3e9340ac314ddc90d89af5382fc28b');
-            const data = await response.json();
-            const arrivalTimes = data.data.map(prediction => new Date(prediction.attributes.departure_time));
-            const earliestArrivalTime = Math.min(...arrivalTimes);
-            updateCountdown(new Date(earliestArrivalTime));
+        function initTrainStream(apiKey) {
+            console.log("Initializing train stream");
+            const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=departure_time`);
+
+            eventSource.onopen = () => {
+                console.log("EventSource connection opened");
+            };
+
+            eventSource.onmessage = event => {
+                if (!event.data) return;
+                const response = JSON.parse(event.data);
+                console.log('MBTA response:', response);
+                const arrivalTimes = response.data.map(pred => new Date(pred.attributes.departure_time));
+                const earliest = Math.min(...arrivalTimes);
+                console.log('Earliest arrival time:', earliest);
+                updateCountdown(new Date(earliest));
+            };
+
+            eventSource.addEventListener('update', event => {
+                console.log('Update event:', event.data);
+                const response = JSON.parse(event.data);
+                const arrivalTime = new Date(response.attributes.departure_time);
+                updateCountdown(arrivalTime);
+            });
+
+            eventSource.addEventListener('add', event => {
+                console.log('Add event:', event.data);
+            });
+
+            eventSource.addEventListener('remove', event => {
+                console.log('Remove event:', event.data);
+            });
+
+            eventSource.onerror = error => {
+                console.error('EventSource failed:', error);
+            };
         }
 
         function updateCountdown(time) {
@@ -63,6 +101,8 @@
             const minutes = Math.floor(diff / 60000);
             const seconds = Math.floor((diff % 60000) / 1000);
             const display = document.getElementById('train-countdown');
+
+            console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
             if (diff > 0) {
                 display.innerText = `Next train: ${minutes}m ${seconds}s`;
@@ -74,4 +114,5 @@
     </script>
 
 </body>
+
 </html>
