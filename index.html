@@ -92,13 +92,16 @@
 
             function updateCountdown() {
                 const now = new Date();
+                console.log('Current time:', now);
                 const upcomingTrains = Array.from(arrivalTimes.values()).filter(entry => entry.time > now);
+                console.log('Upcoming trains:', upcomingTrains);
                 if (upcomingTrains.length === 0) {
                     document.getElementById('train-countdown').innerText = 'No upcoming trains';
                     return;
                 }
 
                 const closestTrain = upcomingTrains.reduce((prev, curr) => (prev.time < curr.time ? prev : curr));
+                console.log('Closest train:', closestTrain);
                 const diff = closestTrain.time - now;
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
