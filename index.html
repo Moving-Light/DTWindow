@@ -22,6 +22,7 @@
         const holidayMode = getUrlParameter('holiday');
         const trainMode = getUrlParameter('train');
         const localMode = getUrlParameter('local');
+        const localKey = getUrlParameter('localKey');
 
         console.log('videoId:', videoId);
         console.log('holidayMode:', holidayMode);
@@ -38,7 +39,14 @@
             document.querySelector('.holiday-lights').style.display = 'block';
         }
 
-        const apiKey = "bc3e9340ac314ddc90d89af5382fc28b";
+        var apiKey = ``;
+
+        if (localMode === 'true'){
+            apiKey = localKey;
+                
+        } else {
+            apiKey = `bc3e9340ac314ddc90d89af5382fc28b`;
+        }
        
        if (trainMode === 'true') {
             console.log("Train mode is enabled");
