@@ -109,15 +109,13 @@
 
                 console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
-                if (closestTrain.status === 'arriving' || closestTrain.status === 'stopped at') {
+                if (closestTrain.status === 'arriving' || closestTrain.status === 'stopped at' || diff <= 0) {
                     display.innerText = 'TRAIN!!!!!';
+                    setTimeout(updateCountdown, 30000); // Update after 30 seconds
                 } else if (diff > 0) {
                     display.innerText = `Next train: ${minutes}m ${seconds}s`;
-                } else {
-                    display.innerText = 'TRAIN!!!!!';
+                    setTimeout(updateCountdown, 1000); // Update every second
                 }
-
-                setTimeout(updateCountdown, 1000);
             }
         }
     </script>
