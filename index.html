@@ -48,7 +48,7 @@
 
         function initTrainStream(apiKey) {
             console.log("Initializing train stream");
-            const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=departure_time`);
+            const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=departure_time,status`);
 
             const arrivalTimes = new Map();
 
@@ -62,7 +62,7 @@
                 console.log('MBTA response:', response);
                 response.data.forEach(pred => {
                     const arrivalTime = new Date(pred.attributes.departure_time);
-                    arrivalTimes.set(pred.id, arrivalTime);
+                    arrivalTimes.set(pred.id, { time: arrivalTime, status: pred.attributes.status });
                 });
                 updateCountdown();
             };
@@ -71,7 +71,7 @@
                 console.log('Update event:', event.data);
                 const response = JSON.parse(event.data);
                 const arrivalTime = new Date(response.attributes.departure_time);
-                arrivalTimes.set(response.id, arrivalTime);
+                arrivalTimes.set(response.id, { time: arrivalTime, status: response.attributes.status });
                 updateCountdown();
             });
 
@@ -92,21 +92,29 @@
 
             function updateCountdown() {
                 const now = new Date();
-                const closestArrival = Math.min(...Array.from(arrivalTimes.values()).filter(time => time > now));
-                const diff = closestArrival - now;
+                const upcomingTrains = Array.from(arrivalTimes.values()).filter(entry => entry.time > now);
+                if (upcomingTrains.length === 0) {
+                    document.getElementById('train-countdown').innerText = 'No upcoming trains';
+                    return;
+                }
+
+                const closestTrain = upcomingTrains.reduce((prev, curr) => (prev.time < curr.time ? prev : curr));
+                const diff = closestTrain.time - now;
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
                 const display = document.getElementById('train-countdown');
 
                 console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
-                if (diff > 0) {
+                if (closestTrain.status === 'arriving' || closestTrain.status === 'stopped at') {
+                    display.innerText = 'TRAIN!!!!!';
+                } else if (diff > 0) {
                     display.innerText = `Next train: ${minutes}m ${seconds}s`;
-                    setTimeout(updateCountdown, 1000);
                 } else {
                     display.innerText = 'TRAIN!!!!!';
-                    setTimeout(updateCountdown, 1000); // Keep updating to check for the next train
                 }
+
+                setTimeout(updateCountdown, 1000);
             }
         }
     </script>
