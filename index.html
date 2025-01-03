@@ -1,30 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DT Window</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body style="background-color: black">
     <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
-
-    <!-- Your PNG overlay -->
     <img class="overlay-image" src="media/window.png" alt="Overlay Image">
     <img class="holiday-lights" src="media/lights.gif" alt="Lights">
     <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em; z-index: 9999;"></div>
-
-
     <script>
-        // Function to get the URL parameter value by name
         function getUrlParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
 
-        // Get the 'code' URL parameter (for example: ?code=dQw4w9WgXcQ)
         const videoId = getUrlParameter('video');
         const holidayMode = getUrlParameter('holiday');
         const trainMode = getUrlParameter('train');
@@ -34,19 +26,16 @@
         console.log('trainMode:', trainMode);
 
         if (videoId) {
-            // Construct the YouTube iframe URL with autoplay enabled
             const iframeUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
-
-            // Set the iframe's src attribute
             document.getElementById('youtube-iframe').src = iframeUrl;
         } else {
-            // If no 'code' parameter is found, display an error or a default video
             console.log("No video code provided.");
         }
 
         if (holidayMode === 'true') {
             document.querySelector('.holiday-lights').style.display = 'block';
         }
+
         const apiKey = 'bc3e9340ac314ddc90d89af5382fc28b';
 
         if (trainMode === 'true') {
@@ -61,6 +50,8 @@
             console.log("Initializing train stream");
             const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=departure_time`);
 
+            const arrivalTimes = new Map();
+
             eventSource.onopen = () => {
                 console.log("EventSource connection opened");
             };
@@ -69,17 +60,19 @@
                 if (!event.data) return;
                 const response = JSON.parse(event.data);
                 console.log('MBTA response:', response);
-                const arrivalTimes = response.data.map(pred => new Date(pred.attributes.departure_time));
-                const earliest = Math.min(...arrivalTimes);
-                console.log('Earliest arrival time:', earliest);
-                updateCountdown(new Date(earliest));
+                response.data.forEach(pred => {
+                    const arrivalTime = new Date(pred.attributes.departure_time);
+                    arrivalTimes.set(pred.id, arrivalTime);
+                });
+                updateCountdown();
             };
 
             eventSource.addEventListener('update', event => {
                 console.log('Update event:', event.data);
                 const response = JSON.parse(event.data);
                 const arrivalTime = new Date(response.attributes.departure_time);
-                updateCountdown(arrivalTime);
+                arrivalTimes.set(response.id, arrivalTime);
+                updateCountdown();
             });
 
             eventSource.addEventListener('add', event => {
@@ -88,31 +81,33 @@
 
             eventSource.addEventListener('remove', event => {
                 console.log('Remove event:', event.data);
+                const response = JSON.parse(event.data);
+                arrivalTimes.delete(response.id);
+                updateCountdown();
             });
 
             eventSource.onerror = error => {
                 console.error('EventSource failed:', error);
             };
-        }
 
-        function updateCountdown(time) {
-            const now = new Date();
-            const diff = time - now;
-            const minutes = Math.floor(diff / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-            const display = document.getElementById('train-countdown');
+            function updateCountdown() {
+                const now = new Date();
+                const closestArrival = Math.min(...Array.from(arrivalTimes.values()).filter(time => time > now));
+                const diff = closestArrival - now;
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                const display = document.getElementById('train-countdown');
 
-            console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
+                console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
-            if (diff > 0) {
-                display.innerText = `Next train: ${minutes}m ${seconds}s`;
-                setTimeout(() => updateCountdown(time), 1000);
-            } else {
-                display.innerText = 'TRAIN!!!!!';
+                if (diff > 0) {
+                    display.innerText = `Next train: ${minutes}m ${seconds}s`;
+                    setTimeout(updateCountdown, 1000);
+                } else {
+                    display.innerText = 'TRAIN!!!!!';
+                }
             }
         }
     </script>
-
 </body>
-
 </html>
