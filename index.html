@@ -48,7 +48,7 @@
 
         function initTrainStream(apiKey) {
             console.log("Initializing train stream");
-            const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=departure_time,status`);
+            const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=arrival_time,departure_time`);
 
             const arrivalTimes = new Map();
 
@@ -61,8 +61,9 @@
                 const response = JSON.parse(event.data);
                 console.log('MBTA response:', response);
                 response.data.forEach(pred => {
-                    const arrivalTime = new Date(pred.attributes.departure_time);
-                    arrivalTimes.set(pred.id, { time: arrivalTime, status: pred.attributes.status });
+                    const arrivalTime = new Date(pred.attributes.arrival_time);
+                    const departureTime = new Date(pred.attributes.departure_time);
+                    arrivalTimes.set(pred.id, { arrivalTime, departureTime });
                 });
                 updateCountdown();
             };
@@ -70,8 +71,9 @@
             eventSource.addEventListener('update', event => {
                 console.log('Update event:', event.data);
                 const response = JSON.parse(event.data);
-                const arrivalTime = new Date(response.attributes.departure_time);
-                arrivalTimes.set(response.id, { time: arrivalTime, status: response.attributes.status });
+                const arrivalTime = new Date(response.attributes.arrival_time);
+                const departureTime = new Date(response.attributes.departure_time);
+                arrivalTimes.set(response.id, { arrivalTime, departureTime });
                 updateCountdown();
             });
 
@@ -93,29 +95,31 @@
             function updateCountdown() {
                 const now = new Date();
                 console.log('Current time:', now);
-                const upcomingTrains = Array.from(arrivalTimes.values()).filter(entry => entry.time > now);
+                const upcomingTrains = Array.from(arrivalTimes.values()).filter(entry => entry.arrivalTime > now);
                 console.log('Upcoming trains:', upcomingTrains);
                 if (upcomingTrains.length === 0) {
                     document.getElementById('train-countdown').innerText = 'No upcoming trains';
                     return;
                 }
 
-                const closestTrain = upcomingTrains.reduce((prev, curr) => (prev.time < curr.time ? prev : curr));
+                const closestTrain = upcomingTrains.reduce((prev, curr) => (prev.arrivalTime < curr.arrivalTime ? prev : curr));
                 console.log('Closest train:', closestTrain);
-                const diff = closestTrain.time - now;
+                const diff = closestTrain.arrivalTime - now;
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
                 const display = document.getElementById('train-countdown');
 
                 console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
-                if (closestTrain.status === 'arriving' || closestTrain.status === 'stopped at' || diff <= 0) {
+                if (closestTrain.departureTime > now && diff <= 0) {
                     display.innerText = 'TRAIN!!!!!';
-                    setTimeout(updateCountdown, 30000); // Update after 30 seconds
                 } else if (diff > 0) {
                     display.innerText = `Next train: ${minutes}m ${seconds}s`;
-                    setTimeout(updateCountdown, 1000); // Update every second
+                } else {
+                    display.innerText = 'No upcoming trains';
                 }
+
+                setTimeout(updateCountdown, 1000);
             }
         }
     </script>
