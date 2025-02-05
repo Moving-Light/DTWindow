@@ -10,6 +10,7 @@
     <iframe id="youtube-iframe" src="" frameborder="0"></iframe>
     <img class="overlay-image" src="media/window.png" alt="Overlay Image">
     <img class="holiday-lights" src="media/lights.gif" alt="Lights">
+    <img class="spring-flowers" src="media/spring.png" alt="Spring Flowers">
     <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em; z-index: 9999;"></div>
     <script>
         function getUrlParameter(name) {
@@ -19,6 +20,7 @@
 
         const videoId = getUrlParameter('video');
         const holidayMode = getUrlParameter('holiday');
+        const springMode = getUrlParameter('spring');
         const trainMode = getUrlParameter('train');
         const localMode = getUrlParameter('local');
         const assassinMode = getUrlParameter('assassin');
@@ -43,6 +45,10 @@
 
         if(holidayMode === 'true') {
             document.querySelector('.holiday-lights').style.display = 'block';
+        }
+
+        if(springMode === 'true') {
+            document.querySelector('.spring-flowers').style.display = 'block';
         }
 
 
