@@ -11,7 +11,7 @@
     <img class="overlay-image" src="media/window.png" alt="Overlay Image">
     <img class="holiday-lights" src="media/lights.gif" alt="Lights">
     <div id="train-countdown" style="position: absolute; top: 0; left: 0; color: white; font-size: 2em; z-index: 9999;"></div>
-
+    <iframe id="assassin-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQtRvgwoGkU-_K033r2phLsPs78iK9mSPp9378gu_OG2uTjxEhwIlN_kRfAkX_5aY_Q9nr8rNtieeIL/pubhtml?gid=169728822&amp;single=true&amp;widget=true&amp;headers=false"></iframe>
     <script>
         function getUrlParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -22,54 +22,77 @@
         const holidayMode = getUrlParameter('holiday');
         const trainMode = getUrlParameter('train');
         const localMode = getUrlParameter('local');
-        const localKey = getUrlParameter('localKey');
+        const assassinMode = getUrlParameter('assassin');
+        const debugMode = getUrlParameter('debug') === 'true';
 
-        console.log('videoId:', videoId);
-        console.log('holidayMode:', holidayMode);
-        console.log('trainMode:', trainMode);
+        function debugLog(message, ...optionalParams) {
+            if (debugMode) {
+                console.log(message, ...optionalParams);
+            }
+        }
+
+        debugLog('videoId:', videoId);
+        debugLog('holidayMode:', holidayMode);
+        debugLog('trainMode:', trainMode);
+        debugLog('assassinMode:', assassinMode);
 
         if (videoId) {
             const iframeUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
             document.getElementById('youtube-iframe').src = iframeUrl;
         } else {
-            console.log("No video code provided.");
+            debugLog("No video code provided.");
         }
 
-        if (holidayMode === 'true') {
+        if(holidayMode === 'true') {
             document.querySelector('.holiday-lights').style.display = 'block';
         }
+        if (assassinMode === 'true') {
+            document.getElementById('assassin-iframe').style.display = 'block';
+        }
 
-        var apiKey = `bc3e9340ac314ddc90d89af5382fc28b`;
+        let apiKey = '';
 
-        // if (localMode === 'true'){
-        //     apiKey = localKey;
-                
-        // } else {
-        //     apiKey = `bc3e9340ac314ddc90d89af5382fc28b`;
-        // }
-       
-       if (trainMode === 'true') {
-            console.log("Train mode is enabled");
-            document.getElementById('train-countdown').style.display = 'block';
-            initTrainStream(apiKey);
+        if (localMode === 'true') {
+            // get apiKey from mbtaAPI.txt
+            fetch('mbtaAPI.txt')
+                .then(response => response.text())
+                .then(text => {
+                    apiKey = text.trim();
+                    debugLog('API Key:', apiKey);
+                    if (trainMode === 'true') {
+                        debugLog("Train mode is enabled");
+                        document.getElementById('train-countdown').style.display = 'block';
+                        initTrainStream(apiKey);
+                    } else {
+                        document.getElementById('train-countdown').style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error fetching API key:', error));
         } else {
-            document.getElementById('train-countdown').style.display = 'none';
+            apiKey = 'bc3e9340ac314ddc90d89af5382fc28b';
+            if (trainMode === 'true') {
+                debugLog("Train mode is enabled");
+                document.getElementById('train-countdown').style.display = 'block';
+                initTrainStream(apiKey);
+            } else {
+                document.getElementById('train-countdown').style.display = 'none';
+            }
         }
 
         function initTrainStream(apiKey) {
-            console.log("Initializing train stream");
+            debugLog("Initializing train stream");
             const eventSource = new EventSource(`https://api-v3.mbta.com/predictions?filter[stop]=place-chmnl&filter[route]=Red&sort=departure_time&api_key=${apiKey}&include=trip&fields[prediction]=arrival_time,departure_time`);
 
             const arrivalTimes = new Map();
 
             eventSource.onopen = () => {
-                console.log("EventSource connection opened");
+                debugLog("EventSource connection opened");
             };
 
             eventSource.onmessage = event => {
                 if (!event.data) return;
                 const response = JSON.parse(event.data);
-                console.log('MBTA response:', response);
+                debugLog('MBTA response:', response);
                 response.data.forEach(pred => {
                     const arrivalTime = new Date(pred.attributes.arrival_time);
                     const departureTime = new Date(pred.attributes.departure_time);
@@ -79,7 +102,7 @@
             };
 
             eventSource.addEventListener('update', event => {
-                console.log('Update event:', event.data);
+                debugLog('Update event:', event.data);
                 const response = JSON.parse(event.data);
                 const arrivalTime = new Date(response.attributes.arrival_time);
                 const departureTime = new Date(response.attributes.departure_time);
@@ -88,11 +111,11 @@
             });
 
             eventSource.addEventListener('add', event => {
-                console.log('Add event:', event.data);
+                debugLog('Add event:', event.data);
             });
 
             eventSource.addEventListener('remove', event => {
-                console.log('Remove event:', event.data);
+                debugLog('Remove event:', event.data);
                 const response = JSON.parse(event.data);
                 arrivalTimes.delete(response.id);
                 updateCountdown();
@@ -104,22 +127,22 @@
 
             function updateCountdown() {
                 const now = new Date();
-                console.log('Current time:', now);
+                debugLog('Current time:', now);
                 const upcomingTrains = Array.from(arrivalTimes.values()).filter(entry => entry.arrivalTime > now);
-                console.log('Upcoming trains:', upcomingTrains);
+                debugLog('Upcoming trains:', upcomingTrains);
                 if (upcomingTrains.length === 0) {
                     document.getElementById('train-countdown').innerText = 'No upcoming trains';
                     return;
                 }
 
                 const closestTrain = upcomingTrains.reduce((prev, curr) => (prev.arrivalTime < curr.arrivalTime ? prev : curr));
-                console.log('Closest train:', closestTrain);
+                debugLog('Closest train:', closestTrain);
                 const diff = closestTrain.arrivalTime - now;
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
                 const display = document.getElementById('train-countdown');
 
-                console.log('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
+                debugLog('Updating countdown:', minutes, 'minutes', seconds, 'seconds');
 
                 if (closestTrain.departureTime > now && diff <= 0) {
                     display.innerText = 'TRAIN!!!!!';
